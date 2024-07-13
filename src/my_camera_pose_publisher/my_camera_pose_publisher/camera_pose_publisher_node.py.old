@@ -1,0 +1,63 @@
+import rclpy
+from rclpy.node import Node
+import math
+from my_object_info_msgs.msg import CameraInfo
+# from transformations import quaternion_from_euler
+
+class CameraPosePublisherNode(Node):
+    def __init__(self):
+        super().__init__('camera_info_publisher_node')
+        self.publisher = self.create_publisher(CameraInfo, '/camera_info_hiroki', 10)
+        self.timer = self.create_timer(1.0, self.publish_pose)
+
+        # pitch, yaw, rollの順番で姿勢は決める
+        # pitchが ±pi/2のとき、rollとpitchが一意に決まらないからyawを優先して決める
+        #   ⇛ ちなみにこの問題をジンバルロックという
+        pos_x = 1.5
+        pos_y = 0.7
+        pos_z = 2.5
+        pitch = math.pi * 0.0
+        yaw = math.pi * 0.0
+        roll = math.pi * 0.0
+        valuable_depth = 5.0
+
+        # 視野角は公式サイトのやつじゃなくて、調整後の640*480の画像の視野角を実際に測った
+        # horizontal_angle = math.radians(91.2)
+        # vertical_angle = math.radians(65.5)
+        horizontal_angle = math.atan(0.4) * 2
+        vertical_angle = math.atan(0.5) * 2
+        
+        self.get_logger().info(f'pos_x:  {pos_x}')
+        self.get_logger().info(f'pos_y:  {pos_y}')
+        self.get_logger().info(f'pos_z:  {pos_z}')
+        # 基本はyaw,pitch,rollの順がわかりやすいからそうする
+        self.get_logger().info(f'yaw  :  {yaw}')
+        self.get_logger().info(f'pitch:  {pitch}')
+        self.get_logger().info(f'roll :  {roll}')
+
+        self.get_logger().info(f'valuable_depth  :  {valuable_depth}')
+        self.get_logger().info(f'horizontal_angle:  {horizontal_angle}')
+        self.get_logger().info(f'vertical_angle :  {vertical_angle}')
+
+        self.camera_info_msg = CameraInfo()
+        self.camera_info_msg.pos_x = pos_x
+        self.camera_info_msg.pos_y = pos_y
+        self.camera_info_msg.pos_z = pos_z
+        self.camera_info_msg.yaw = yaw
+        self.camera_info_msg.pitch = pitch
+        self.camera_info_msg.roll = roll
+        self.camera_info_msg.valuable_depth = valuable_depth
+        self.camera_info_msg.horizontal_angle = horizontal_angle
+        self.camera_info_msg.vertical_angle = vertical_angle
+
+    def publish_pose(self):
+        self.publisher.publish(self.camera_info_msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = CameraPosePublisherNode()
+    rclpy.spin(node)
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
